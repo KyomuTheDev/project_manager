@@ -3,7 +3,7 @@
 use clap::Parser;
 use std::path::{Path, PathBuf};
 
-mod logging;
+mod log;
 mod args;
 mod rbxts;
 mod rbx;
@@ -40,13 +40,13 @@ fn init() {
 	utils::create(&paths.rbx);
 	utils::create(&paths.python);
 
-	logging::info("Project initialized!");
+	log::info("Project initialized!");
 }
 
 // fun comment
 
 fn main() {
-	logging::info("Running Project manager v3.0.0");
+	log::info("Running Project manager v3.0.0");
 
 	let args = args::ProjectManagerArgs::parse();
 
@@ -63,7 +63,7 @@ fn main() {
 					let formatted = format!("C:\\projects\\{}\\", &t);
 					let path = Path::new(&formatted);
 				
-					logging::info(&format!("{}:", t));
+					log::info(&format!("{}:", t));
 					// println!("{}", format!("{}:", t).cyan());
 					utils::list(utils::ListFunction::Specific, Some(&path.to_path_buf()), Some(&String::from("  ")) );
 				},
@@ -79,20 +79,20 @@ fn main() {
 				"rust" => rust::new(name),
 				"python" => python::new(name),
 				_ => {
-					logging::error(&format!("Invalid project type: {}", project_type));
+					log::error(&format!("Invalid project type: {}", project_type));
 				}
 			};
 		},
 		ProjectManagerCommands::Clone { project_type, name, new_name } => {
 			match utils::clone(project_type, name, new_name) {
-				Ok(_) => logging::info(&format!("{}", "Project cloned!")),
+				Ok(_) => log::info(&format!("{}", "Project cloned!")),
 				Err(e) => {
-					logging::error(&format!("Failed to clone project because: {}", e));
+					log::error(&format!("Failed to clone project because: {}", e));
 				}
 			}
 		},
 		_ => {
-			logging::error(&format!("Invalid command: {:?}", command));
+			log::error(&format!("Invalid command: {:?}", command));
 		}
 	}
 }

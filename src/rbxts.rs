@@ -3,7 +3,7 @@ use std::path::Path;
 use std::fs;
 use colored::Colorize;
 use json;
-use crate::logging;
+use crate::log;
 
 use super::utils;
 
@@ -22,8 +22,8 @@ fn edit_tree(path: &String, name: &String) {
 	obj["tree"]["StarterPlayer"]["StarterPlayerScripts"].remove("TS");
 
 	match fs::write(&path, json::stringify_pretty(obj, 4)) {
-		Ok(_) => logging::info("Successfully edited tree!"),
-		Err(e) => logging::error(&format!("Failed to edit tree with error: {}", e.to_string()))
+		Ok(_) => log::info("Successfully edited tree!"),
+		Err(e) => log::error(&format!("Failed to edit tree with error: {}", e.to_string()))
 	};
 }
 
@@ -32,12 +32,12 @@ pub fn new(name: &str) {
 	let dir = Path::new(&project_path);
 
 	if !utils::is_initialized() {
-		logging::warning("Project not initialized. Please run `project init` first.");
+		log::warning("Project not initialized. Please run `project init` first.");
 		return;
 	}
 
 	if dir.exists() {
-		logging::warning("This project already exists!");
+		log::warning("This project already exists!");
 		return;
 	}
 
@@ -52,9 +52,9 @@ pub fn new(name: &str) {
 		.status();
 
 	match result {
-		Ok(_) => logging::info("rbxtsc successfully initialized!"),
+		Ok(_) => log::info("rbxtsc successfully initialized!"),
 		Err(err) => {
-			logging::error(&format!("rbxtsc failed to initialize with error: {}", err.to_string()));
+			log::error(&format!("rbxtsc failed to initialize with error: {}", err.to_string()));
 
 			panic!("{}", format!("rbxtsc failed to initialize: {}", err).bright_red())
 		},
@@ -65,7 +65,7 @@ pub fn new(name: &str) {
 
 	edit_tree(&json_file, &String::from(name));
 
-	logging::info(&format!("Project {} created successfully!", name));
+	log::info(&format!("Project {} created successfully!", name));
 
 	utils::open(&project_path);
 }

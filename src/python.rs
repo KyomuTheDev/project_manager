@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::logging;
+use crate::log;
 
 use super::utils;
 
@@ -9,18 +9,18 @@ pub fn new(name: &str) {
 	let project_directory = Path::new(&project_path);
 
 	if !utils::is_initialized() {
-		logging::error("Project not initialized. Please run `project init` first.");
+		log::error("Project not initialized. Please run `project init` first.");
 		return;
 	}
 
 	if project_directory.exists() {
-		logging::error("This project already exists!");
+		log::error("This project already exists!");
 		return;
 	}
 
 	utils::create(&project_directory.to_path_buf());
 
-	logging::info(&format!("Project {} created successfully!", name));
+	log::info(&format!("Project {} created successfully!", name));
 
 	utils::open(&project_path);
 }

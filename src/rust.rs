@@ -2,7 +2,7 @@ use std::process::Command;
 use std::path::Path;
 use colored::Colorize;
 
-use crate::logging;
+use crate::log;
 
 use super::utils;
 
@@ -11,12 +11,12 @@ pub fn new(name: &str) {
 	let dir = Path::new(&project_path);
 
 	if !utils::is_initialized() {
-		logging::info("Project not initialized. Please run `project init` first.");
+		log::info("Project not initialized. Please run `project init` first.");
 		return;
 	}
 
 	if dir.exists() {
-		logging::error("This project already exists!");
+		log::error("This project already exists!");
 		return;
 	}
 
@@ -29,15 +29,15 @@ pub fn new(name: &str) {
 		.status();
 
 	match result {
-		Ok(_) => logging::info("Rust project successfully initialized!"),
+		Ok(_) => log::info("Rust project successfully initialized!"),
 		Err(e) => {
-			logging::error(&format!("Cargo failed to create rust project with error: {}", e));
+			log::error(&format!("Cargo failed to create rust project with error: {}", e));
 
 			panic!("{}", format!("Cargo failed to create rust project with error: {}", e).bright_red())
 		}
 	}
 
-	logging::info(&format!("Project {} created successfully!", name));
+	log::info(&format!("Project {} created successfully!", name));
 
 	utils::open(&project_path);
 }
