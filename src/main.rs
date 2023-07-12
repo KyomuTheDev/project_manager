@@ -76,8 +76,8 @@ fn main() {
 			match project_type.as_str() {
 				"rbx" => rbx::new(name),
 				"rbxts" => rbxts::new(name),
-                "rust" => rust::new(name),
-                "python" => python::new(name),
+				"rust" => rust::new(name),
+				"python" => python::new(name),
 				_ => {
 					logging::log_error(&format!("Invalid project type: {}", project_type));
 				}
@@ -87,11 +87,11 @@ fn main() {
 			match utils::clone(project_type, name, new_name) {
 				Ok(_) => logging::log_info(&format!("{}", "Project cloned!")),
 				Err(e) => {
-            	    logging::log_error(&format!("Failed to clone project because: {}", e));
-            	}
+					logging::log_error(&format!("Failed to clone project because: {}", e));
+				}
 			}
 		},
-        _ => {
+		_ => {
 			logging::log_error(&format!("Invalid command: {:?}", command));
 		}
 	}

@@ -42,7 +42,7 @@ pub fn delete(path: &String) -> () {
 
 	match fs::remove_dir_all(path) {
 		Ok(_) => logging::log_info(&format!("Deleted project directory: {}", path)),
-        Err(e) => logging::log_error(&format!("Failed to delete project directory `{}` because {}", path, e.to_string())),
+		Err(e) => logging::log_error(&format!("Failed to delete project directory `{}` because {}", path, e.to_string())),
 	}
 }
 #[allow(dead_code)]
@@ -88,9 +88,9 @@ pub fn rename(t: &String, name: &String, new_name: &String) -> () {
 	}
 
 	match fs::rename(&format!("C:\\projects\\{}\\{}", t, name), &format!("C:\\projects\\{}\\{}", t, new_name)) {
-        Ok(_) => logging::log_info(&format!("Renamed {} to {}", name, new_name)),
-        Err(e) => logging::log_error(&format!("Failed to rename {} to {} because {}", name, new_name, e.to_string())),
-    }
+		Ok(_) => logging::log_info(&format!("Renamed {} to {}", name, new_name)),
+		Err(e) => logging::log_error(&format!("Failed to rename {} to {} because {}", name, new_name, e.to_string())),
+	}
 }
 
 pub fn clone(t: &String, name: &String, new_name: &String) -> Result<(), Box<dyn Error>> {

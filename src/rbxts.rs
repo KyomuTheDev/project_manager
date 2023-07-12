@@ -23,7 +23,7 @@ fn edit_tree(path: &String, name: &String) {
 
 	match fs::write(&path, json::stringify_pretty(obj, 4)) {
 		Ok(_) => logging::log_info("Successfully edited tree!"),
-        Err(e) => logging::log_error(&format!("Failed to edit tree with error: {}", e.to_string()))
+		Err(e) => logging::log_error(&format!("Failed to edit tree with error: {}", e.to_string()))
 	};
 }
 
