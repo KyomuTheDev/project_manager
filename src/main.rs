@@ -2,7 +2,6 @@
 
 use clap::Parser;
 use std::path::{Path, PathBuf};
-use colored::Colorize;
 
 mod logging;
 mod args;
@@ -41,13 +40,13 @@ fn init() {
 	utils::create(&paths.rbx);
 	utils::create(&paths.python);
 
-	logging::info(&format!("{}", "Project initialized!".bright_green()));
+	logging::info("Project initialized!");
 }
 
 // fun comment
 
 fn main() {
-	logging::info(&format!("{}", "Running Project manager v3.0.0".bright_green()));
+	logging::info("Running Project manager v3.0.0");
 
 	let args = args::ProjectManagerArgs::parse();
 
@@ -64,7 +63,8 @@ fn main() {
 					let formatted = format!("C:\\projects\\{}\\", &t);
 					let path = Path::new(&formatted);
 				
-					println!("{}", format!("{}:", t).cyan());
+					logging::info(&format!("{}:", t));
+					// println!("{}", format!("{}:", t).cyan());
 					utils::list(utils::ListFunction::Specific, Some(&path.to_path_buf()), Some(&String::from("  ")) );
 				},
 				None => utils::list(utils::ListFunction::All, None, None),

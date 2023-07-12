@@ -1,7 +1,6 @@
 use std::process::Command;
 use std::path::Path;
 use std::fs;
-use colored::Colorize;
 use json;
 use json::object;
 use crate::logging;
@@ -63,7 +62,7 @@ pub fn new(name: &str) {
 		Err(err) => {
 			logging::error(&format!("Failed to initialize Rojo with error: {}", err.to_string()));
 
-			panic!("{} {}", "Rojo failed to initialize with error:".bright_red(), err.to_string().bright_red())
+			panic!("Rojo failed to initialize with error: {}", err.to_string())
 		},
 	}
 

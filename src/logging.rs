@@ -11,5 +11,5 @@ pub fn error(error: &str) {
 }
 
 pub fn info(info: &str) {
-	println!("{}", info.cyan());
+	println!("{}", info.bright_green());
 }
