@@ -41,13 +41,13 @@ fn init() {
 	utils::create(&paths.rbx);
 	utils::create(&paths.python);
 
-	logging::log_info(&format!("{}", "Project initialized!".bright_green()));
+	logging::info(&format!("{}", "Project initialized!".bright_green()));
 }
 
 // fun comment
 
 fn main() {
-	logging::log_info(&format!("{}", "Running Project manager v3.0.0".bright_green()));
+	logging::info(&format!("{}", "Running Project manager v3.0.0".bright_green()));
 
 	let args = args::ProjectManagerArgs::parse();
 
@@ -79,20 +79,20 @@ fn main() {
 				"rust" => rust::new(name),
 				"python" => python::new(name),
 				_ => {
-					logging::log_error(&format!("Invalid project type: {}", project_type));
+					logging::error(&format!("Invalid project type: {}", project_type));
 				}
 			};
 		},
 		ProjectManagerCommands::Clone { project_type, name, new_name } => {
 			match utils::clone(project_type, name, new_name) {
-				Ok(_) => logging::log_info(&format!("{}", "Project cloned!")),
+				Ok(_) => logging::info(&format!("{}", "Project cloned!")),
 				Err(e) => {
-					logging::log_error(&format!("Failed to clone project because: {}", e));
+					logging::error(&format!("Failed to clone project because: {}", e));
 				}
 			}
 		},
 		_ => {
-			logging::log_error(&format!("Invalid command: {:?}", command));
+			logging::error(&format!("Invalid command: {:?}", command));
 		}
 	}
 }

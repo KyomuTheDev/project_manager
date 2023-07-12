@@ -11,12 +11,12 @@ pub fn new(name: &str) {
 	let dir = Path::new(&project_path);
 
 	if !utils::is_initialized() {
-		logging::log_info("Project not initialized. Please run `project init` first.");
+		logging::info("Project not initialized. Please run `project init` first.");
 		return;
 	}
 
 	if dir.exists() {
-		logging::log_error("This project already exists!");
+		logging::error("This project already exists!");
 		return;
 	}
 
@@ -29,15 +29,15 @@ pub fn new(name: &str) {
 		.status();
 
 	match result {
-		Ok(_) => logging::log_info("Rust project successfully initialized!"),
+		Ok(_) => logging::info("Rust project successfully initialized!"),
 		Err(e) => {
-			logging::log_error(&format!("Cargo failed to create rust project with error: {}", e));
+			logging::error(&format!("Cargo failed to create rust project with error: {}", e));
 
 			panic!("{}", format!("Cargo failed to create rust project with error: {}", e).bright_red())
 		}
 	}
 
-	logging::log_info(&format!("Project {} created successfully!", name));
+	logging::info(&format!("Project {} created successfully!", name));
 
 	utils::open(&project_path);
 }

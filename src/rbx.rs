@@ -31,8 +31,8 @@ fn edit_tree(path: &String, name: &String) {
 	obj["tree"]["Workspace"].remove("Baseplate");
 
 	match fs::write(path, json::stringify_pretty(obj, 4)) {
-		Ok(_) => logging::log_info("Successfully edited tree"),
-		Err(e) => logging::log_error(&format!("Failed to edit tree with error: {}", e.to_string())),
+		Ok(_) => logging::info("Successfully edited tree"),
+		Err(e) => logging::error(&format!("Failed to edit tree with error: {}", e.to_string())),
 	};
 }
 
@@ -41,12 +41,12 @@ pub fn new(name: &str) {
 	let dir = Path::new(&project_path);
 
 	if !utils::is_initialized() {
-		logging::log_warning("Project not initialized. Please run `project init` first.");
+		logging::warning("Project not initialized. Please run `project init` first.");
 		return;
 	}
 
 	if dir.exists() {
-		logging::log_warning("This project already exists!");
+		logging::warning("This project already exists!");
 		return;
 	}
 
@@ -59,9 +59,9 @@ pub fn new(name: &str) {
 		.status();
 
 	match result {
-		Ok(_) => logging::log_info("Rojo successfully initialized!"),
+		Ok(_) => logging::info("Rojo successfully initialized!"),
 		Err(err) => {
-			logging::log_error(&format!("Failed to initialize Rojo with error: {}", err.to_string()));
+			logging::error(&format!("Failed to initialize Rojo with error: {}", err.to_string()));
 
 			panic!("{} {}", "Rojo failed to initialize with error:".bright_red(), err.to_string().bright_red())
 		},
@@ -72,7 +72,7 @@ pub fn new(name: &str) {
 
 	edit_tree(&json_file, &String::from(name));
 
-	logging::log_info(&format!("Project {} created successfully!", name));
+	logging::info(&format!("Project {} created successfully!", name));
 
 	utils::open(&project_path);
 }

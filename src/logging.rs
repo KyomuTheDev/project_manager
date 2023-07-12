@@ -2,14 +2,14 @@
 
 use colored::Colorize;
 
-pub fn log_warning(warning: &str) {
+pub fn warning(warning: &str) {
 	println!("{}", warning.bright_yellow());
 }
 
-pub fn log_error(error: &str) {
+pub fn error(error: &str) {
 	println!("{}", error.bright_red());
 }
 
-pub fn log_info(info: &str) {
+pub fn info(info: &str) {
 	println!("{}", info.cyan());
 }
