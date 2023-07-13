@@ -36,7 +36,7 @@ fn edit_tree(path: &String, name: &String) {
 }
 
 pub fn new(name: &str) {
-	let project_path = format!("C:\\projects\\rbx\\{}", name);
+	let project_path = format!("C:\\projects\\in_progress\\rbx\\{}", name);
 	let dir = Path::new(&project_path);
 
 	if !utils::is_initialized() {
@@ -50,7 +50,7 @@ pub fn new(name: &str) {
 	}
 
 	let result = Command::new("cmd")
-		.current_dir(&"C:\\projects\\rbx")
+		.current_dir(&"C:\\projects\\in_progress\\rbx")
 		.arg("/C")
 		.arg("rojo")
 		.arg("init")

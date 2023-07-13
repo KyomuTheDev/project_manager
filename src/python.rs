@@ -5,7 +5,7 @@ use crate::log;
 use super::utils;
 
 pub fn new(name: &str) {
-	let project_path = format!("C:\\projects\\python\\{}", name);	
+	let project_path = format!("C:\\projects\\in_progress\\python\\{}", name);	
 	let project_directory = Path::new(&project_path);
 
 	if !utils::is_initialized() {

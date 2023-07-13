@@ -28,7 +28,7 @@ fn edit_tree(path: &String, name: &String) {
 }
 
 pub fn new(name: &str) {
-	let project_path = format!("C:\\projects\\rbxts\\{}", name);
+	let project_path = format!("C:\\projects\\in_progress\\rbxts\\{}", name);
 	let dir = Path::new(&project_path);
 
 	if !utils::is_initialized() {

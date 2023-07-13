@@ -7,7 +7,7 @@ use crate::log;
 use super::utils;
 
 pub fn new(name: &str) {
-	let project_path = format!("C:\\projects\\rust\\{}", name);	
+	let project_path = format!("C:\\projects\\in_progress\\rust\\{}", name);	
 	let dir = Path::new(&project_path);
 
 	if !utils::is_initialized() {
@@ -21,7 +21,7 @@ pub fn new(name: &str) {
 	}
 
 	let result = Command::new("cmd")
-		.current_dir(&"C:\\projects\\rust")
+		.current_dir(&"C:\\projects\\in_progress\\rust")
 		.arg("/C")
 		.arg("cargo")
 		.arg("new")

@@ -62,6 +62,14 @@ pub enum ProjectManagerCommands {
 		new_name: String
 	},
 
+	/// mark a project as completed and move it to the completed folder
+	Completed {
+		/// The type of project to mark as completed
+		project_type: String,
+		/// The name of the project to mark as completed
+        name: String
+	},
+
 	/// Initialize project manager
 	Init {},
 }
