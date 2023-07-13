@@ -71,7 +71,7 @@ pub fn list(func: ListFunction, path: Option<&PathBuf>, prefix: Option<&String>)
 	if func == ListFunction::All {
 		color_blue("\nProjects:");
 
-		for dir_entry in fs::read_dir("C:\\projects").unwrap() {
+		for dir_entry in fs::read_dir("C:\\projects\\in_progress").unwrap() {
 			let project_path = dir_entry.unwrap().path();
 			color_pink(&format!("  {}", project_path.display().to_string()));
 
@@ -92,24 +92,24 @@ pub fn list(func: ListFunction, path: Option<&PathBuf>, prefix: Option<&String>)
 }
 
 pub fn rename(t: &String, name: &String, new_name: &String) -> () {
-	if !Path::new(&format!("C:\\projects\\{}\\{}", t, name)).exists() {
+	if !Path::new(&format!("C:\\projects\\in_progress\\{}\\{}", t, name)).exists() {
 		log::error(&format!("Could not find project `{}` to rename", name));
 		return;
 	}
-	if Path::new(&format!("C:\\projects\\{}\\{}", t, new_name)).exists() {
+	if Path::new(&format!("C:\\projects\\in_progress\\{}\\{}", t, new_name)).exists() {
 		log::error(&format!("Project `{}` already exists inside {}", new_name, t));
 		return;
 	}
 
-	match fs::rename(&format!("C:\\projects\\{}\\{}", t, name), &format!("C:\\projects\\{}\\{}", t, new_name)) {
+	match fs::rename(&format!("C:\\projects\\in_progress\\{}\\{}", t, name), &format!("C:\\projects\\in_progress\\{}\\{}", t, new_name)) {
 		Ok(_) => log::info(&format!("Renamed {} to {}", name, new_name)),
 		Err(e) => log::error(&format!("Failed to rename {} to {} because {}", name, new_name, e.to_string())),
 	}
 }
 
 pub fn clone(t: &String, name: &String, new_name: &String) -> Result<(), Box<dyn Error>> {
-	let in_dir = PathBuf::from(&format!("C:\\projects\\{}\\{}", t, name));
-	let out_dir = PathBuf::from(&format!("C:\\projects\\{}\\{}", t, new_name));
+	let in_dir = PathBuf::from(&format!("C:\\projects\\in_progress\\{}\\{}", t, name));
+	let out_dir = PathBuf::from(&format!("C:\\projects\\in_progress\\{}\\{}", t, new_name));
 
 	if out_dir.exists() {
 		log::error(&format!("Project `{}` already exists inside {}", new_name, t));
