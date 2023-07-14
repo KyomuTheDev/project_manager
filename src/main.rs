@@ -69,12 +69,12 @@ fn main() {
 	match &command {
 		ProjectManagerCommands::Init {} => init(),
 		ProjectManagerCommands::Rename { project_type, name, new_name } => utils::rename(&project_type, &name, &new_name),
-		ProjectManagerCommands::Delete { project_type, name } => utils::delete(&format!("C:\\projects\\{}\\{}", &project_type, &name)),
-		ProjectManagerCommands::Open { project_type, name } => utils::open(&format!("C:\\projects\\{}\\{}", &project_type, &name)),
+		ProjectManagerCommands::Delete { project_type, name } => utils::delete(&format!("C:\\projects\\in_progress\\{}\\{}", &project_type, &name)),
+		ProjectManagerCommands::Open { project_type, name } => utils::open(&format!("C:\\projects\\in_progress\\{}\\{}", &project_type, &name)),
 		ProjectManagerCommands::List { project_type } => {
 			match &project_type {
 				Some(t) => {
-					let formatted = format!("C:\\projects\\{}\\", &t);
+					let formatted = format!("C:\\projects\\in_progress\\{}\\", &t);
 					let path = Path::new(&formatted);
 				
 					log::info(&format!("{}:", t));
@@ -99,7 +99,7 @@ fn main() {
 			
 			Command::new("cmd")
 				.arg("/C")
-				.current_dir(format!("C:\\projects\\{}\\{}", &project_type, &name))
+				.current_dir(format!("C:\\projects\\in_progress\\{}\\{}", &project_type, &name))
 				.arg("git")
 				.arg("init");
 		},
