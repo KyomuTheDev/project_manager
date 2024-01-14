@@ -1,151 +1,137 @@
-/// named utils bc I suck at naming things
-
-use std::error::Error;
-use std::fs;
-use std::path::{PathBuf, Path};
+use serde::{Deserialize, Serialize};
+use std::path::{Path, PathBuf};
 use std::process::Command;
-use walkdir::WalkDir;
-use colored::Colorize;
+use std::{fs, io};
 
-use crate::log;
+use crate::args::Kind;
+use crate::error::ProjectError;
 
-pub fn open(path: &String) {
-	if !Path::new(path).exists() {
-		log::error(&format!("Project `{}` does not exist", path));
-		return;
-	}
+use winreg::enums::*;
+use winreg::RegKey;
 
-	Command::new("cmd")
-		.current_dir(path)
-		.arg("/C")
-		.arg("code")
-		.arg(".")
-		.spawn()
-		.expect("Could not open project");
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Project {
+    pub name: String,
+    pub kind: Kind,
+    pub tags: Vec<String>,
+    pub path: PathBuf,
 }
 
-pub fn create(path: &PathBuf) -> () {
-	if path.exists() {
-		log::error(&format!("Project `{}` already exists", path.display().to_string()));
-		return;
-	}
-
-	match fs::create_dir(&path) {
-		Ok(_) => log::info(&format!("Created project directory: {}", path.display().to_string())),
-		Err(e) => log::error(&format!("Failed to create project directory `{}` because {}", path.display().to_string(), e.to_string())),
-	}
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Metadata {
+    pub projects: Vec<Project>,
 }
 
-pub fn delete(path: &String) -> () {
-	if !Path::new(path).exists() {
-		log::warning(&format!("Project `{}` does not exist", path));
-		return;
-	}
+pub fn init_regkey() -> Result<RegKey, Box<dyn std::error::Error>> {
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let key_path = Path::new("Software").join("ApolloPM");
+    let (key, _) = hkcu.create_subkey(&key_path)?;
 
-	match fs::remove_dir_all(path) {
-		Ok(_) => log::info(&format!("Deleted project directory: {}", path)),
-		Err(e) => log::error(&format!("Failed to delete project directory `{}` because {}", path, e.to_string())),
-	}
-}
-#[allow(dead_code)]
-#[derive(PartialEq)]
-pub enum ListFunction {
-	All,
-	Specific,
+    Ok(key)
 }
 
-fn color_white(s: &str) -> () {
-	println!("{}", s.bright_white().to_string())
+pub fn get_folder_path() -> PathBuf {
+    let key = init_regkey().unwrap();
+    let folder_path: String = key.get_value("folder_path").unwrap();
+
+    PathBuf::from(folder_path)
 }
 
-fn color_pink(s: &str) -> () {
-	println!("{}", s.truecolor(245, 169, 184).to_string())
+pub fn read_metadata() -> Result<Metadata, Box<dyn std::error::Error>> {
+    let json_value: Metadata = serde_json::from_value(serde_json::from_str(&fs::read_to_string(
+        get_folder_path().join("metadata.json"),
+    )?)?)?;
+
+    Ok(json_value)
 }
 
-fn color_blue(s: &str) -> () {
-	println!("{}", s.truecolor(91, 206, 250).to_string())
+pub fn write_metadata(metadata: Metadata) -> Result<(), Box<dyn std::error::Error>> {
+    fs::write(
+        get_folder_path().join("metadata.json"),
+        serde_json::to_string_pretty(&metadata)?,
+    )?;
+
+    Ok(())
 }
 
-#[allow(dead_code)]
-pub fn list(func: ListFunction, path: Option<&PathBuf>, prefix: Option<&String>) {
-	if func == ListFunction::All {
-		color_blue("\nProjects:");
+pub fn project_exists(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let metadata = read_metadata()?;
 
-		for dir_entry in fs::read_dir("C:\\projects\\in_progress").unwrap() {
-			let project_path = dir_entry.unwrap().path();
-			color_pink(&format!("  {}", project_path.display().to_string()));
+    for project in metadata.projects {
+        if project.name == name {
+            return Ok(());
+        }
+    }
 
-			list(ListFunction::Specific, Some(&project_path), Some(&String::from("    ")));
-		}
-	} else if func == ListFunction::Specific {
-		if !path.unwrap().exists() {
-			log::error(&format!("Project directory `{}` does not exist", path.unwrap().display().to_string()));
-			return;
-		}
-
-		for dir_entry in fs::read_dir(path.unwrap()).unwrap() {
-			let project_path = dir_entry.unwrap().path();
-
-			color_white(&format!("{}{}", prefix.unwrap_or(&String::from("  ")), project_path.display().to_string()));
-		}
-	}
-}
-
-pub fn rename(t: &String, name: &String, new_name: &String) -> () {
-	if !Path::new(&format!("C:\\projects\\in_progress\\{}\\{}", t, name)).exists() {
-		log::error(&format!("Could not find project `{}` to rename", name));
-		return;
-	}
-	if Path::new(&format!("C:\\projects\\in_progress\\{}\\{}", t, new_name)).exists() {
-		log::error(&format!("Project `{}` already exists inside {}", new_name, t));
-		return;
-	}
-
-	match fs::rename(&format!("C:\\projects\\in_progress\\{}\\{}", t, name), &format!("C:\\projects\\in_progress\\{}\\{}", t, new_name)) {
-		Ok(_) => log::info(&format!("Renamed {} to {}", name, new_name)),
-		Err(e) => log::error(&format!("Failed to rename {} to {} because {}", name, new_name, e.to_string())),
-	}
-}
-
-pub fn clone(t: &String, name: &String, new_name: &String) -> Result<(), Box<dyn Error>> {
-	let in_dir = PathBuf::from(&format!("C:\\projects\\in_progress\\{}\\{}", t, name));
-	let out_dir = PathBuf::from(&format!("C:\\projects\\in_progress\\{}\\{}", t, new_name));
-
-	if out_dir.exists() {
-		log::error(&format!("Project `{}` already exists inside {}", new_name, t));
-		return Err("Could not find project to clone".into());
-	}
-
-	if !in_dir.exists() {
-		log::error(&format!("Could not find project `{}` to clone", name));
-		return Err("Could not find project to clone".into());
-	}
-
-	for entry in WalkDir::new(&in_dir).into_iter() {
-		let entry = entry?;
-
-		let from = entry.path();
-		let to = out_dir.join(from.strip_prefix(&in_dir)?);
-
-		log::info(&format!("Cloning {}", from.display().to_string()));
-
-		if entry.file_type().is_dir() {
-			if let Err(e) = fs::create_dir(&to) {
-				match e.kind() {
-					std::io::ErrorKind::AlreadyExists => {}
-					_ => return Err(e.into()),
-				}
-			}
-		} else if entry.file_type().is_file() {
-			fs::copy(from, to)?;
-		} else {
-			log::warning(&format!("Ignored symlink {}", from.display().to_string()));
-		}
-	}
-
-	Ok(())
+    Err(Box::new(std::io::Error::new(
+        std::io::ErrorKind::PermissionDenied,
+        "Project not found",
+    )))
 }
 
 pub fn is_initialized() -> bool {
-	return Path::new("C:\\projects").exists();
+    init_regkey().is_ok() & get_folder_path().exists()
+}
+
+pub fn ensure_exists(name: &String) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let mut answer = name.clone();
+
+    let path = get_folder_path().join("projects").join(&answer);
+
+    if path.exists() {
+        answer = loop {
+            println!(
+                "Project({}) already exists, please choose a different name",
+                path.file_name()
+                    .expect("Invalid path name")
+                    .to_str()
+                    .expect("I don't even know")
+            );
+
+            io::stdin().read_line(&mut answer)?;
+
+            answer = answer.clone();
+
+            let path = get_folder_path().join("projects").join(&answer);
+
+            if path.exists() {
+                continue;
+            }
+
+            break answer;
+        }
+    }
+
+    return Ok(get_folder_path().join("projects").join(&answer));
+}
+
+pub fn check_exists(name: &String) -> Result<(), Box<dyn std::error::Error>> {
+	if get_folder_path().join("projects").join(name).exists() {
+		Ok(())
+	} else {
+		Err(Box::new(ProjectError::new(&format!("Project({}) does not exist", name))))
+	}
+}
+
+pub fn check_init() -> Result<(), Box<dyn std::error::Error>> {
+    if !is_initialized() {
+        crate::log::warning("Project not initialized, would you like to initialize it? (y/n)");
+
+        let mut answer = String::new();
+        io::stdin().read_line(&mut answer)?;
+        answer = answer.to_lowercase();
+
+        if answer != "y\r\n" || answer != "y\n" {
+            crate::log::warning("Process aborted");
+            return Err(Box::new(crate::error::ProjectError::new("Process aborted")));
+        }
+
+        Command::new("cmd")
+            .arg("/c")
+            .arg("project")
+            .arg("init")
+            .spawn()?;
+    }
+
+    Ok(())
 }

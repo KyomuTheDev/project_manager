@@ -1,77 +1,72 @@
-use std::process::Command;
-use std::path::Path;
 use std::fs;
-use json;
-use json::object;
+use std::path::PathBuf;
+use std::process::Command;
+
 use crate::log;
 
-use super::utils;
+fn get_project_json(name: &str) -> String {
+    format!(
+        "{{
+		\"name\": \"{}\",
+		\"tree\": {{
+		  \"$className\": \"DataModel\",
+	  
+		  \"ReplicatedStorage\": {{
+			\"core\": {{
+			  \"$path\": \"src/shared\"
+			}}
+		  }},
+	  
+		  \"ServerScriptService\": {{
+			\"server\": {{
+			  \"$path\": \"src/server\"
+			}}
+		  }},
+	  
+		  \"StarterPlayer\": {{
+			\"StarterPlayerScripts\": {{
+			  \"client\": {{
+				\"$path\": \"src/client\"
+			  }}
+			}}
+		  }},
+	  
+		  \"Workspace\": {{
+			\"$properties\": {{
+			  \"FilteringEnabled\": true
+			}}
+		  }},
 
-fn edit_tree(path: &String, name: &String) {
-	let result = fs::read_to_string(path).unwrap();
-
-	let mut obj = json::parse(&result).unwrap();
-	obj["name"] = json::JsonValue::String(name.to_string());
-
-	obj["tree"]["ServerScriptService"]["server"] = obj["tree"]["ServerScriptService"]["Server"].clone();
-	obj["tree"]["ReplicatedStorage"]["core"] = obj["tree"]["ReplicatedStorage"]["Common"].clone();
-	obj["tree"]["StarterPlayer"]["StarterPlayerScripts"]["client"] = obj["tree"]["StarterPlayer"]["StarterPlayerScripts"]["Client"].clone();
-
-	obj["tree"]["HttpService"] = object! {
-		"$className": "HttpService",
-		"$properties": object! {
-			"HttpEnabled": true,
-		},
-	};
-
-	obj["tree"]["StarterPlayer"]["StartPlayerScripts"].remove("Client");
-	obj["tree"]["StarterPlayer"]["StartPlayerScripts"].remove("Server");
-	obj["tree"]["StarterPlayer"]["StartPlayerScripts"].remove("Common");
-	obj["tree"]["Workspace"].remove("Baseplate");
-
-	match fs::write(path, json::stringify_pretty(obj, 4)) {
-		Ok(_) => log::info("Successfully edited tree"),
-		Err(e) => log::error(&format!("Failed to edit tree with error: {}", e.to_string())),
-	};
+		  \"SoundService\": {{
+			\"$properties\": {{
+			  \"RespectFilteringEnabled\": true
+			}}
+		  }}
+		}}
+	  }}",
+        name
+    )
 }
 
-pub fn new(name: &str) {
-	let project_path = format!("C:\\projects\\in_progress\\rbx\\{}", name);
-	let dir = Path::new(&project_path);
+fn edit_tree(path: &PathBuf, name: &String) {
+    match fs::write(path, get_project_json(name)) {
+        Ok(_) => log::info("Successfully edited tree"),
+        Err(e) => log::error(&format!(
+            "Failed to edit tree with error: {}",
+            e.to_string()
+        )),
+    };
+}
 
-	if !utils::is_initialized() {
-		log::warning("Project not initialized. Please run `project init` first.");
-		return;
-	}
+pub fn new(dir: &PathBuf, name: &String) -> Result<(), Box<dyn std::error::Error>> {
+    Command::new("cmd")
+        .arg("/c")
+        .arg("rojo")
+        .arg("init")
+        .current_dir(dir)
+        .status()?;
 
-	if dir.exists() {
-		log::warning("This project already exists!");
-		return;
-	}
+    edit_tree(&dir.join("default.project.json"), name);
 
-	let result = Command::new("cmd")
-		.current_dir(&"C:\\projects\\in_progress\\rbx")
-		.arg("/C")
-		.arg("rojo")
-		.arg("init")
-		.arg(&name)
-		.status();
-
-	match result {
-		Ok(_) => log::info("Rojo successfully initialized!"),
-		Err(err) => {
-			log::error(&format!("Failed to initialize Rojo with error: {}", err.to_string()));
-
-			panic!("Rojo failed to initialize with error: {}", err.to_string())
-		},
-	}
-
-	let mut json_file = project_path.clone();
-	json_file.push_str("\\default.project.json");
-
-	edit_tree(&json_file, &String::from(name));
-
-	log::info(&format!("Project {} created successfully!", name));
-
-	utils::open(&project_path);
+    return Ok(());
 }
