@@ -43,7 +43,7 @@ fn main() -> MainResult {
 fn init(folder_path: Option<PathBuf>) -> MainResult {
     let mut path = match folder_path {
         Some(p) => p,
-        None => PathBuf::from("C:\\projects2"),
+        None => PathBuf::from("C:\\projects"),
     };
 
     if !path.exists() {
