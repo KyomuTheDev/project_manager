@@ -1,281 +1,193 @@
-#![allow(unreachable_patterns)]
+use project::Project;
+use std::{fs, path::PathBuf, process::Command};
 
-use args::{Arguments, Commands, Kind, TagCommand};
-use utils::{ensure_exists, check_init, get_folder_path, project_exists, write_metadata, read_metadata, init_regkey, check_exists};
-
+use args::Args;
 use clap::Parser;
-use serde_json::{json, Value};
-use walkdir::WalkDir;
+use dialoguer::{Confirm, Input, Select};
 
-use std::fs;
-use std::fs::{File, OpenOptions};
-use std::io;
-use std::io::{prelude::*, Error, ErrorKind};
-use std::path::PathBuf;
-use std::process::Command;
+const PROJECTS_PATH: &str = "./projects.json";
 
 mod args;
-mod error;
-mod log;
-mod rbx;
-mod rbxts;
-mod rust;
-mod utils;
+mod project;
 
-type MainResult = Result<(), Box<dyn std::error::Error>>;
+fn read_projects() -> Vec<Project> {
+    let projects: Vec<Project> =
+        serde_json::from_str(fs::read_to_string(PROJECTS_PATH).unwrap().as_str()).unwrap();
 
-fn main() -> MainResult {
-    let args = Arguments::parse();
+    projects
+}
 
-    match args.command {
-        Commands::Init { folder_path } => init(folder_path),
-        Commands::New { name, kind, tags } => new(name, kind, tags),
-        Commands::Delete { name } => delete(name),
-        Commands::List { tags } => list(tags),
-        Commands::Open { name } => open(name),
-        Commands::Rename { name, new_name } => rename(name, new_name),
-        Commands::Clone { name } => clone(name),
-        Commands::Complete { name } => complete(name),
-        Commands::Tag { tag_command } => tag(tag_command),
+fn write_projects(projects: &Vec<Project>) {
+    fs::write(PROJECTS_PATH, serde_json::to_string(projects).unwrap()).unwrap();
+}
+
+fn main() {
+    let command = Args::parse();
+
+    match command {
+        Args::Open => open(),
+        Args::Remove => remove(),
+        Args::Add => add(),
+        Args::Delete => delete(),
+		Args::View => view(),
+        _ => {}
     }
 }
 
-fn init(folder_path: Option<PathBuf>) -> MainResult {
-    let mut path = match folder_path {
-        Some(p) => p,
-        None => PathBuf::from("C:\\projects"),
-    };
+fn open() {
+    let projects = read_projects();
 
-    if !path.exists() {
-        fs::create_dir_all(&path)?;
+    let selection = Select::new()
+        .with_prompt("Select the project you want to open.")
+        .items(&projects)
+        .interact_opt()
+        .unwrap();
+
+    if selection.is_none() {
+        return println!("Aborted.");
     }
 
-    let key = init_regkey()?;
+    let selected_project = projects[selection.unwrap()].clone();
 
-    key.set_value("folder_path", &path.to_string_lossy().to_string())?;
-
-    path.push("metadata.json");
-
-    File::create(&path)?;
-
-    let v_json: Value = json!({
-        "projects": []
-    });
-
-    let json = serde_json::to_string_pretty(&v_json)?;
-
-    let mut file = OpenOptions::new().write(true).truncate(true).open(&path)?;
-
-    file.write(&json.as_bytes())?;
-
-    Ok(())
-}
-
-fn new(name: String, kind: Kind, tags: Option<Vec<String>>) -> MainResult {
-    check_init()?;
-    ensure_exists(&name)?;
-
-    let mut metadata = read_metadata()?;
-
-    metadata.projects.push(utils::Project {
-        name: name.clone(),
-        kind: kind.clone(),
-        tags: tags.unwrap_or(vec![]),
-        path: get_folder_path().join("projects").join(&name),
-    });
-
-    write_metadata(metadata)?;
-    let project_path = get_folder_path().join("projects").join(&name);
-    fs::create_dir(&project_path)?;
-
-    match kind {
-        Kind::Python | Kind::None => {}
-        Kind::Rbx => {
-			rbx::new(&project_path, &name)?;
-		},
-        Kind::Rbxts { template } => {
-			rbxts::new(&project_path, &name, template)?;
-		},
-        Kind::Rust => {
-			rust::new(&project_path)?;
-		},
-    };
-
-	open(name)?;
-
-    Ok(())
-}
-
-fn delete(name: String) -> MainResult {
-    check_init()?;
-
-    println!("Are you sure you want to delete {}? y/n", name);
-
-    let mut answer = String::new();
-
-    io::stdin().read_line(&mut answer)?;
-
-    answer = answer.to_lowercase();
-
-    // I will never not be annoyed by windows using \r\n
-    if answer == "n\r\n" || answer == "n\n" {
-        println!("Process aborted");
-        return Ok(());
-    } else if answer != "y\r\n" || answer != "y\n" {
-        println!("Invalid answer, process aborted");
-        return Ok(());
-    }
-
-    let mut metadata = read_metadata()?;
-
-    let mut count: usize = 0;
-    for project in &mut metadata.projects {
-        count += 1;
-        if project.name == name {
-            break;
-        }
-    }
-
-    let project = metadata.projects.get(count - 1).unwrap();
-
-    fs::remove_dir_all(&project.path)?;
-    metadata.projects.swap_remove(count - 1);
-
-    fs::write(
-        get_folder_path().join("metadata.json"),
-        serde_json::to_string_pretty(&metadata)?,
-    )?;
-
-    Ok(())
-}
-
-fn list(tags: Option<Vec<String>>) -> MainResult {
-    check_init()?;
-
-    let p_tags = match tags {
-        Some(tags) => tags,
-        None => vec![],
-    };
-
-    let metadata = read_metadata()?;
-
-    for project in metadata.projects {
-        let mut count: usize = 0;
-
-        for tag in &p_tags {
-            if !project.tags.contains(tag) {
-                break;
-            }
-
-            count += 1;
-        }
-
-        if count == p_tags.len() {
-            println!("{}", project.name);
-        }
-    }
-
-    Ok(())
-}
-
-fn open(name: String) -> MainResult {
-    check_exists(&name)?;
-    project_exists(&name)?;
-
-    Command::new("cmd")
-        .current_dir(get_folder_path().join("projects").join(&name))
+    let status = Command::new("cmd")
         .arg("/c")
-        .arg("code")
-        .arg(".")
-        .spawn()
-        .expect("Code failed to start");
+        .args(["code", "."])
+        .current_dir(selected_project.path)
+        .status();
 
-    Ok(())
-}
-
-fn rename(name: String, new_name: String) -> MainResult {
-    check_init()?;
-    project_exists(&name)?;
-
-    let current_path = get_folder_path().join("projects").join(&name);
-    let new_path = get_folder_path().join("projects").join(&new_name);
-
-    if new_path.exists() {
-        return Err(Box::new(Error::new(
-            ErrorKind::PermissionDenied,
-            "Project already exists",
-        )));
+    match status {
+        Ok(_) => {}
+        Err(e) => println!("An error occured while opening the project: {}", e),
     }
-
-    fs::rename(&current_path, &new_path)?;
-
-    Ok(())
 }
 
-fn clone(name: String) -> MainResult {
-    check_init()?;
-    project_exists(&name)?;
-    let current_path = get_folder_path().join("projects").join(&name);
-    let clone_path = ensure_exists(&(name.clone() + "_clone"))?;
-    for entry in WalkDir::new(&current_path) {
-        let entry = entry?;
+fn add() {
+    let s_path: String = Input::new()
+        .with_prompt(
+            "Enter the path to the project(Relative is allowed, it will be converted to absolute).",
+        )
+        .interact_text()
+        .unwrap();
 
-        let from = entry.path();
-        let to = clone_path.join(entry.file_name());
+    let path = PathBuf::from(&s_path).canonicalize().unwrap();
 
-        if entry.file_type().is_dir() {
-            fs::create_dir(&to)?;
-        } else if entry.file_type().is_file() {
-            fs::copy(from, &to)?;
-        } else {
-            println!("Ignored symlink {}", from.display().to_string());
-        }
-    }
-    Ok(())
-}
+    let mut projects = read_projects();
 
-fn complete(name: String) -> MainResult {
-    check_init()?;
-    let metadata = read_metadata()?;
-    metadata.projects.into_iter().for_each(|mut project| {
-        if project.name != name {
+    for project in &projects {
+        if project.path == path {
+            println!("This project already exists: {}", project.name);
             return;
         }
+    }
 
-        if !project.tags.contains(&"complete".to_string()) {
-            project.tags.push("complete".to_string());
+    let name: String = Input::new()
+        .with_prompt("Enter the name of the project")
+        .interact_text()
+        .unwrap();
+
+    let tags = {
+        let str_tags: String = Input::new()
+            .with_prompt("Enter the tags for this project, seperated by comma's")
+            .allow_empty(true)
+            .interact_text()
+            .unwrap();
+
+        let mut tags: Vec<String> = vec![];
+
+        for tag in str_tags.split(",") {
+            tags.push(tag.trim().to_string())
         }
-    });
-    Ok(())
+
+        tags
+    };
+
+    projects.push(Project { name, path, tags });
+
+    write_projects(&projects)
 }
 
-fn tag(tag_command: TagCommand) -> MainResult {
-    check_init()?;
-    match tag_command {
-        TagCommand::Add { name, tag } => {
-            let mut metadata = read_metadata()?;
+fn remove() {
+    let mut projects = read_projects();
 
-            metadata.projects.iter_mut().for_each(|project| {
-                if project.name != name {
-                    return;
-                }
-                project.tags.push(tag.clone());
-            });
+    let project = Select::new()
+        .with_prompt("Select the project you want to remove.")
+        .items(&projects)
+        .interact_opt()
+        .unwrap();
 
-            write_metadata(metadata)
-        }
-
-        TagCommand::Remove { name, tag } => {
-            let mut metadata = read_metadata()?;
-
-            metadata.projects.iter_mut().for_each(|project| {
-                if project.name != name {
-                    return;
-                }
-                project.tags.retain(|t| t != &tag);
-            });
-
-            write_metadata(metadata)
-        }
+    if project.is_none() {
+        return println!("Aborted");
     }
+
+    projects.swap_remove(project.unwrap());
+
+    write_projects(&projects);
+}
+
+fn delete() {
+    let mut projects = read_projects();
+
+    let project = Select::new()
+        .with_prompt("Select the project you want to delete")
+        .items(&projects)
+        .interact_opt()
+        .unwrap();
+
+    if project.is_none() {
+        return println!("Aborted.");
+    }
+
+    if !Confirm::new()
+        .with_prompt("Are you sure you want to delete this project?")
+        .interact()
+        .unwrap()
+    {
+        return println!("Aborted.");
+    }
+
+    let removed = projects.swap_remove(project.unwrap());
+
+    fs::remove_dir_all(removed.path).unwrap();
+
+    write_projects(&projects);
+}
+
+fn view() {
+	let tags: String = Input::new()
+		.with_prompt("Enter the tags to search, seperated by comma's.")
+		.allow_empty(true)
+		.interact_text()
+		.unwrap();
+	
+	if tags.len() == 0 {
+		view_unfiltered()
+	} else {
+		view_filtered(tags);
+	}
+}
+
+fn view_filtered(s_tags: String) {
+	let mut tags = vec![];
+
+	for tag in s_tags.split(",") {
+		tags.push(tag.trim().to_string())
+	}
+
+	for project in read_projects() {
+		let mut has_tags = true;
+
+		for tag in &tags {
+			if !project.tags.contains(&tag) { has_tags = false; break; }
+		}
+
+		if !has_tags { continue; }
+
+		println!("{}", project);
+	}
+}
+
+fn view_unfiltered() {
+	for project in read_projects() {
+		println!("{}", project);
+	}
 }

@@ -1,14 +1,17 @@
 [package]
-name = "project_manager"
+name = "project-manager"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+console = "0.15.8"
+dialoguer = "0.11.0"
+indicatif = "0.17.8"
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = "1.0.114"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-clap = { version = "4.0", features = ["derive"] }
-colored = "2.0.4"
-serde_json = "1.0.107"
-serde = { version = "1.0.188", features = ["derive"] }
-winreg = "0.52.0"
-walkdir = "2.4.0"
+[dependencies.clap]
+version="4.5.2"
+features=["derive"]
